@@ -1,0 +1,17 @@
+node_modules/
+dist/
+data/
+*.log
+.env
+.env.local
+.DS_Store
+.vscode/
+.idea/
+coverage/
+*.tsbuildinfo
+.shots/
+.claude/
+.commandcode/
+.zcode/
+.qoder/
+graphify-out/

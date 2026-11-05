@@ -1,0 +1,435 @@
+/*
+ * KeyPool - engineering datasheet.
+ *
+ * THESIS: A pool instrument, not an admin page. The surface is a measured
+ * register - ruled sections, tabular figures that carry their units, one
+ * accent, hairline structure - refusing the card-grid-of-equal-stat-tiles
+ * that this dashboard used to be, where every figure was equally loud and
+ * therefore equally ignorable.
+ *
+ * OWN-WORLD: Ink on paper, and its inversion under a desk lamp. Neutral greys
+ * carry the ground; a single azure accent marks the one thing that is selected
+ * or live. No elevation by shadow - structure is drawn, not cast. Rules are
+ * hairlines, the way a data sheet rules its columns. Radii stay small because
+ * instruments are not pills. Colour is never decorative: ok / warn / bad mean
+ * exactly one state each.
+ *
+ * STORY: You glance up from something else and read health. The top band is
+ * the vital signs, the ruled table below is the roster, the figure is the
+ * trace. Nothing animates that is not either a state change or a value that
+ * has genuinely moved.
+ *
+ * FIRST VIEWPORT: a full-width masthead carrying the range and the live
+ * total, then one ruled band of four vital figures on a shared baseline, then
+ * a second band of token totals, then the roster. No nested cards anywhere;
+ * the page is ruled, not boxed.
+ *
+ * Palette values live in :root and .dark and are registered into Tailwind
+ * with `inline`, so one class name resolves to a different ink per theme.
+ * That is what makes light and dark two printings of one document rather
+ * than two designs.
+ */
+
+@import 'tailwindcss';
+
+/* Registered with `inline` so a utility emits var(--ink-canvas) directly and
+   the theme class decides the value, at use time, not at build time. */
+@theme inline {
+  --color-canvas: var(--ink-canvas);
+  --color-surface: var(--ink-surface);
+  --color-raised: var(--ink-raised);
+  --color-inset: var(--ink-inset);
+  --color-line: var(--ink-line);
+  --color-line-strong: var(--ink-line-strong);
+  --color-fg: var(--ink-fg);
+  --color-subtle: var(--ink-subtle);
+  --color-muted: var(--ink-muted);
+  --color-faint: var(--ink-faint);
+  --color-accent: var(--ink-accent);
+  --color-accent-ink: var(--ink-accent-ink);
+  --color-ok: var(--ink-ok);
+  --color-warn: var(--ink-warn);
+  --color-bad: var(--ink-bad);
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace;
+
+  --radius-panel: 12px;
+  --radius-control: 6px;
+
+  /*
+   * Motion is a scale, not a set of hand-picked numbers written into each
+   * component. Three durations cover every transition on the surface, and only
+   * the readout is slow enough to be noticed as a change rather than a repaint.
+   */
+  --ease-out-quint: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-wipe: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/*
+ * Light is the native printing, and the page is the *ground*: an unprinted
+ * sheet. Panels advance off it as white paper laid on top. The ground is a
+ * half-step under white rather than a shade off it, so the hairlines still
+ * carry the structure instead of the fill - which is what a sheet of paper
+ * does, and why it reads calm rather than boxed.
+ */
+:root {
+  color-scheme: light;
+
+  --ink-canvas: #f7f7f5;
+  --ink-surface: #ffffff;
+  --ink-raised: #f2f2ef;
+  --ink-inset: #ebebe7;
+  --ink-line: #e2e2dc;
+  /* Carries control boundaries (ghost buttons, the off-state switch), so it
+     clears the 3:1 non-text bar rather than being a merely visible rule. */
+  --ink-line-strong: #83837c;
+  --ink-fg: #14141a;
+  --ink-subtle: #3d3d45;
+  --ink-muted: #5b5b63;
+  --ink-faint: #6a6a64; /* 5.1:1 on the ground - still the quietest readable ink */
+  --ink-accent: #0b63c4; /* 5.4:1 on the ground */
+  --ink-accent-ink: #ffffff;
+  --ink-ok: #0a6b45;
+  --ink-warn: #8a5600;
+  --ink-bad: #b42318;
+
+  --pulse: var(--ink-accent);
+}
+
+/* Dark is the same document read under a lamp: lift the surface off the
+   ground, and keep the rules quieter rather than brighter. */
+.dark {
+  color-scheme: dark;
+
+  --ink-canvas: #0a0a0c;
+  --ink-surface: #121215;
+  --ink-raised: #1a1a1f;
+  --ink-inset: #070709;
+  --ink-line: #26262c;
+  /* 3.3:1 on the ground - the same control-boundary bar as the light theme. */
+  --ink-line-strong: #6a6b73;
+  --ink-fg: #ececf0;
+  --ink-subtle: #c4c4cc;
+  --ink-muted: #9a9aa5;
+  --ink-faint: #82838c;
+  --ink-accent: #4cc9f0;
+  --ink-accent-ink: #04141c;
+  --ink-ok: #34d399;
+  --ink-warn: #fbbf24;
+  --ink-bad: #f87171;
+
+  --pulse: var(--ink-accent);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--ink-canvas);
+  color: var(--ink-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  /*
+   * The theme is a re-print, not a cut - but only when nobody is watching a
+   * reveal. This cross-fade is the path taken when the operating system flips
+   * at sunset on its own; an operator pressing the control gets the wipe below.
+   * Both are 240ms; the difference is that only one of them has a direction.
+   */
+  transition:
+    background-color 240ms var(--ease-out-quint),
+    color 240ms var(--ease-out-quint);
+}
+
+/* Figures are measurements, so they are set tabular and monospaced. This is
+   data, not costume: every value in the register has to hold its column. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* The one authored moment. A live instrument does not snap to a new reading;
+   the figure settles into it and marks the change with a single sweep of the
+   accent. Fires only when the value actually differs, so an idle dashboard is
+   completely still. */
+@keyframes settle {
+  from {
+    transform: translateY(-0.14em);
+    opacity: 0.35;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes sweep {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.readout {
+  animation: settle 420ms var(--ease-out-quint);
+}
+
+.readout::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: -0.4rem;
+  height: 1px;
+  background: var(--pulse);
+  transform-origin: left;
+  animation: sweep 620ms var(--ease-out-quint) both;
+}
+
+/*
+ * Focus is one spec, not a glow.
+ *
+ * A 2px ring in the accent, offset clear of the element so it never reflows a
+ * table row or a switch. The outline is left to follow the element's own
+ * border-radius - forcing a single radius onto every focusable thing rounded a
+ * rectangular nav item and a circular switch to the same 6px pill, which is
+ * the giveaway of a focus style nobody looked at.
+ */
+:focus-visible {
+  outline: 2px solid var(--ink-accent);
+  outline-offset: 2px;
+}
+
+/* A dialog is a sheet laid down on the document: it settles from just above
+   its resting place and resolves. Short, and no scale - scaling a panel reads
+   as a pop-up toy, whereas a small rise reads as a sheet being set down. */
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes veil-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/*
+ * Leaving is faster than arriving, and it is the only thing on the surface that
+ * exits. A notification that took 200ms to arrive and then vanished between one
+ * frame and the next reads as a glitch; giving the exit its own, shorter curve
+ * is what makes it read as the same object being dismissed.
+ */
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.99);
+  }
+}
+
+.sheet-in {
+  animation: sheet-in 180ms var(--ease-out-quint);
+}
+.veil-in {
+  animation: veil-in 140ms var(--ease-standard);
+}
+.toast-in {
+  animation: toast-in 200ms var(--ease-out-quint);
+}
+.toast-out {
+  animation: toast-out 140ms var(--ease-standard) forwards;
+}
+
+/* A row that answers the cursor. A data table where nothing responds to hover
+   reads as a screenshot rather than something you can operate. */
+.row-hover {
+  transition: background-color 120ms var(--ease-standard);
+}
+.row-hover:hover {
+  background-color: color-mix(in oklab, var(--ink-raised) 55%, transparent);
+}
+
+/* --------------------------------------------------------- the theme reveal */
+
+/*
+ * The circular reveal.
+ *
+ * Both snapshots are frozen for the length of the transition, and the new one is
+ * clipped to a circle growing out of the control the operator pressed. The old
+ * printing is held still underneath at full opacity - so the moving edge is a
+ * clean boundary between two complete documents - and the new one is drawn over
+ * it, rather than the two cross-dissolving into each other and leaving a soft
+ * seam that travels with the circle.
+ *
+ * The clip path itself is animated from script, against the geometry of the
+ * viewport, because its radius depends on where the control is.
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 0;
+}
+::view-transition-new(root) {
+  z-index: 1;
+}
+
+/*
+ * Suspends the body cross-fade for the duration of a wipe.
+ *
+ * A view transition photographs the page after the callback runs, and an
+ * in-flight 240ms colour fade would be captured half-finished - the reveal
+ * would open on a document whose ground had not finished darkening.
+ */
+.theme-wipe,
+.theme-wipe body {
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /*
+   * The blanket rule above only reaches the real document; a view transition
+   * animates pseudo-elements, which no element selector matches. Reduced motion
+   * has to be said here too, or a wipe would still play for an operator who
+   * asked for none.
+   */
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+::selection {
+  background: var(--ink-accent);
+  color: var(--ink-accent-ink);
+}
+
+/* A horizontally scrolling nav has to say so. The fade is the affordance that
+   a destination continues past the edge, instead of looking absent. */
+.nav-scroll {
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent);
+}
+.nav-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--ink-line-strong);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-muted);
+  background-clip: content-box;
+}
+
+@layer components {
+  /* A panel is a ruled region, not a box: one hairline, one fill, no shadow.
+     Nesting one of these inside another is always wrong. */
+  .card {
+    @apply rounded-[var(--radius-panel)] border border-line bg-surface;
+  }
+  .card-pad {
+    @apply p-4 sm:p-5;
+  }
+
+  .btn,
+  .btn-primary,
+  .btn-ghost,
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-[var(--radius-control)] px-3 py-1.5
+           text-sm font-medium transition-[background-color,border-color,color,transform] duration-150
+           active:translate-y-px disabled:cursor-not-allowed disabled:opacity-45;
+  }
+  .btn-primary {
+    @apply bg-accent text-accent-ink hover:opacity-90;
+  }
+  .btn-ghost {
+    @apply border border-line-strong bg-transparent text-subtle hover:bg-raised hover:text-fg;
+  }
+  .btn-danger {
+    @apply border border-bad/45 bg-transparent text-bad hover:bg-bad/10;
+  }
+
+  .input {
+    @apply w-full rounded-[var(--radius-control)] border border-line bg-inset px-3 py-1.5 text-sm text-fg
+           outline-none transition-[border-color,box-shadow] duration-150
+           placeholder:text-faint focus:border-accent/70 focus:ring-2 focus:ring-accent/20;
+  }
+
+  /* Field labels stay sentence case. Uppercase-tracked is reserved for column
+     heads, which is what a sheet of figures actually uses it for. */
+  .label {
+    @apply mb-1.5 block text-xs font-medium text-muted;
+  }
+
+  /*
+   * Column heads share the height of the rows they sit above.
+   *
+   * A head that is shorter than its rows reads as a caption floating over the
+   * data; a head that is taller reads as its own band. Either way the table
+   * stops being a grid, and the eye loses the vertical line it uses to run a
+   * value back to its label. The head used to sit 2px shorter than its body -
+   * a gap small enough to pass unnoticed and large enough to break the rule.
+   *
+   * Padding, not a fixed height: a cell holding a chip or two lines of copy has
+   * to be allowed to grow, and a metronome that clips its own data is not a
+   * metronome.
+   */
+  .th {
+    @apply px-3 py-2.5 text-left text-[11px] font-semibold tracking-wider text-muted uppercase;
+  }
+  .td {
+    @apply px-3 py-2.5 text-sm text-subtle;
+  }
+}

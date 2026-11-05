@@ -1,0 +1,8 @@
+packages:
+  - server
+  - web
+
+# pnpm >=10 blocks dependency postinstall scripts by default. esbuild needs
+# its own install step to place the platform binary that Vite and Vitest use.
+allowBuilds:
+  esbuild: true

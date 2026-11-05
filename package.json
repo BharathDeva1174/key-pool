@@ -1,0 +1,23 @@
+{
+  "name": "keypool",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OpenAI-compatible pooling proxy with dashboard, stats and configurable routing strategies",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "build": "pnpm --filter @keypool/server build && pnpm --filter @keypool/web build",
+    "build:server": "pnpm --filter @keypool/server build",
+    "build:web": "pnpm --filter @keypool/web build",
+    "start": "node server/dist/index.js",
+    "dev": "pnpm --parallel --filter @keypool/server --filter @keypool/web dev",
+    "dev:server": "pnpm --filter @keypool/server dev",
+    "dev:web": "pnpm --filter @keypool/web dev",
+    "smoke": "node scripts/smoke.mjs",
+    "verify": "pnpm build && pnpm smoke",
+    "typecheck": "pnpm -r typecheck"
+  }
+}
